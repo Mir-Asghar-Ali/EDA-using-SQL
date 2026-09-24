@@ -48,21 +48,6 @@ Source CSVs for the three tables are in `datasets/csv-files/`:
 
 The folder also holds bronze and silver CSVs from earlier stages and two expected report outputs (`gold.report_customers.csv`, `gold.report_products.csv`). Scripts 00 to 13 read only the three `gold.*` files listed above.
 
-## Requirements
-
-- SQL Server 2019 or later (uses `DATETRUNC`, `FORMAT`, `TOP`, `DATEDIFF`, `GETDATE()`).
-- SQL Server Management Studio or Azure Data Studio.
-- `BULK INSERT` permission on the server.
-
-## Setup
-
-1. Clone the repo and open SQL Server Management Studio.
-2. Open `scripts/00_init_database.sql`.
-3. Change the three file paths in the `BULK INSERT` statements to the location of the CSVs on your machine. The checked-in paths point to `C:\sql\sql-data-analytics-project\datasets\csv-files\...` and will fail on other machines. The load skips the header row with `FIRSTROW = 2`.
-4. Run `00_init_database.sql`. Record row counts for the three tables to confirm the load.
-
-Warning: script 00 drops database `DataWarehouseAnalytics` if it exists and recreates it. All data in that database is deleted. Back up before you run it.
-
 ## How to run
 
 Run the scripts in numeric order. Scripts 01 to 04 only read metadata and totals, so they are safe to rerun. Scripts 05 to 11 join fact and dimension tables. Scripts 12 and 13 drop and recreate views, so they depend on script 00 having completed.
@@ -127,24 +112,3 @@ EDA-SQL/
 
 Full business context, KPI formulas, and acceptance checks are in `docs/business_requirements.pdf`.
 
-## Known issue
-
-`scripts/12_report_customers.sql` is missing a comma after `total_products` in the final `SELECT` (lines 96-97). The view fails to create until you add it:
-
-```sql
-total_products,
-lifespan,
-```
-
-## Troubleshooting
-
-- `BULK INSERT` reports path not found: the path in script 00 must be a path the SQL Server service account can read, not only your user account. Copy the CSVs to a server-local folder and update the three paths.
-- `BULK INSERT` reports access denied: run Management Studio as administrator or grant read rights on the folder to the service account.
-- `DATETRUNC` not recognized: you are on SQL Server 2016 or older, or on another engine. Use 2019 or later.
-- Views 12 and 13 return no rows: script 00 did not load data, or `order_date` is null for all rows. Check row counts in the three base tables first.
-
-## Limits
-
-- Sample data only. Do not use the totals for production decisions.
-- SQL Server syntax only. The scripts will not run unchanged on Postgres, MySQL, or SQLite.
-- `recency` and `age` use `GETDATE()`, so they shift each day you run them.
